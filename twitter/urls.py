@@ -1,5 +1,4 @@
 """twitter URL Configuration
-
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/3.1/topics/http/urls/
 Examples:
@@ -20,6 +19,7 @@ from accounts.api import views
 
 router = routers.DefaultRouter()
 router.register(r'api/users', views.UserViewSet)
+router.register(r'api/accounts', views.AccountViewSet, basename='accounts')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
