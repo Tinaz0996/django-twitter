@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.test import TestCase as DjangoTestCase
 from likes.models import Like
+from newsfeeds.models import NewsFeed
 from rest_framework.test import APIClient
 from tweets.models import Tweet
 
@@ -18,7 +19,7 @@ class TestCase(DjangoTestCase):
 
     def create_user(self, username, email=None, password=None):
         if email is None:
-            email = '{}@twitter.com'.format(username)
+            email = '{}@jiuzhang.com'.format(username)
         if password is None:
             password = 'generic password'
         # 不能写成 User.objects.create()
@@ -29,6 +30,9 @@ class TestCase(DjangoTestCase):
         if content is None:
             content = 'default tweet content'
         return Tweet.objects.create(user=user, content=content)
+
+    def create_newsfeed(self, user, tweet):
+        return NewsFeed.objects.create(user=user, tweet=tweet)
 
     def create_comment(self, user, tweet, content=None):
         if content is None:
