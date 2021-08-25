@@ -6,17 +6,19 @@ from accounts.api.serializers import (
     UserSerializerWithProfile,
 )
 from accounts.models import UserProfile
-from django.contrib.auth.models import User
-from rest_framework import permissions
-from rest_framework import viewsets
-from rest_framework.response import Response
-from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny
 from django.contrib.auth import (
     authenticate as django_authenticate,
     login as django_login,
     logout as django_logout,
 )
+from django.contrib.auth.models import User
+from django.utils.decorators import method_decorator
+from ratelimit.decorators import ratelimit
+from rest_framework import permissions
+from rest_framework import viewsets
+from rest_framework.decorators import action
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
 from utils.permissions import IsObjectOwner
 
 
@@ -28,14 +30,16 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = UserSerializerWithProfile
     permission_classes = (permissions.IsAdminUser,)
 
+
 class AccountViewSet(viewsets.ViewSet):
     permission_classes = (AllowAny,)
     serializer_class = SignupSerializer
 
     @action(methods=['POST'], detail=False)
+    @method_decorator(ratelimit(key='ip', rate='3/s', method='POST', block=True))
     def login(self, request):
         """
-        default username is admin, password is admin
+        默认的 username 是 admin, password 也是 admin
         """
         serializer = LoginSerializer(data=request.data)
         if not serializer.is_valid():
@@ -59,17 +63,19 @@ class AccountViewSet(viewsets.ViewSet):
         })
 
     @action(methods=['POST'], detail=False)
+    @method_decorator(ratelimit(key='ip', rate='3/s', method='POST', block=True))
     def logout(self, request):
         """
-        logout from current account
+        登出当前用户
         """
         django_logout(request)
         return Response({"success": True})
 
     @action(methods=['POST'], detail=False)
+    @method_decorator(ratelimit(key='ip', rate='3/s', method='POST', block=True))
     def signup(self, request):
         """
-        signup with username, email, password
+        使用 username, email, password 进行注册
         """
         # 不太优雅的写法
         # username = request.data.get('username')
@@ -100,14 +106,12 @@ class AccountViewSet(viewsets.ViewSet):
         }, status=201)
 
     @action(methods=['GET'], detail=False)
+    @method_decorator(ratelimit(key='ip', rate='3/s', method='GET', block=True))
     def login_status(self, request):
         """
-        check login status and info of current user
+        查看用户当前的登录状态和具体信息
         """
-        data = {
-            'has_logged_in': request.user.is_authenticated,
-            'ip': request.META['REMOTE_ADDR']
-        }
+        data = {'has_logged_in': request.user.is_authenticated}
         if request.user.is_authenticated:
             data['user'] = UserSerializer(request.user).data
         return Response(data)
@@ -118,5 +122,5 @@ class UserProfileViewSet(
     viewsets.mixins.UpdateModelMixin,
 ):
     queryset = UserProfile
-    permission_classes = (permissions.IsAuthenticated, IsObjectOwner)
+    permission_classes = (IsObjectOwner,)
     serializer_class = UserProfileSerializerForUpdate
